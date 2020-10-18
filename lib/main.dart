@@ -67,7 +67,9 @@ class _codesViewerState extends State<codesViewer> {
   List<Map<String, dynamic>> results = [
     {"haltTime": "04:27:40", "issueSymbol": "ATHE", "reasonCodes": 'LUDP'},
     {"haltTime": "04:27:45", "issueSymbol": "ATH", "reasonCodes": 'LUDP'},
-    {"haltTime": "04:27:46", "issueSymbol": "AT", "reasonCodes": 'M'}
+    {"haltTime": "04:27:45", "issueSymbol": "ATH", "reasonCodes": 'LUDP'},
+    {"haltTime": "04:27:46", "issueSymbol": "AT", "reasonCodes": 'M'},
+    {"haltTime": "04:27:46", "issueSymbol": "AT", "reasonCodes": 'M'},
   ];
   //////////////////////////////////
   Map<String, dynamic> ignore = {
@@ -103,8 +105,22 @@ class _codesViewerState extends State<codesViewer> {
           obj['haltTime'] = data['ndaq\$HaltTime']['\$t'];
           obj['issueSymbol'] = data['ndaq\$IssueSymbol']['\$t'];
           obj['reasonCodes'] = data['ndaq\$ReasonCode']['\$t'];
-          if (obj['reasonCodes'] == 'LUDP' || obj['reasonCodes'] == 'T12') {
+          if (obj['reasonCodes'] == 'LUDP' || obj['reasonCodes'] == 'M') {
             rowData.add(obj);
+          }
+        }
+        int count_issue = 0;
+        String prev = "";
+        if (rowData.length != 0) {
+          for (var data in rowData) {
+            if (data['issueSymbol'] == prev) {
+              count_issue++;
+            }
+            if (count_issue == 2) {
+              _showNotificationWithSound();
+              count_issue = 0;
+            }
+            prev = data['issueSymbol'];
           }
         }
       });
@@ -181,8 +197,12 @@ class _codesViewerState extends State<codesViewer> {
         builder: (BuildContext context, AsyncSnapshot snapshot) {
           if (snapshot.data == null) {
             return (Center(
-              child: CircularProgressIndicator(),
-            ));
+                child: Text(
+              'No Data Available',
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontWeight: FontWeight.bold),
+            )));
           } else {
             return Padding(
               padding: new EdgeInsets.all(10.0),
@@ -265,14 +285,13 @@ class _codesViewerState extends State<codesViewer> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        // onPressed: () {
-        //   setState(() {
-        //     rawData = [];
-        //     rowData = [];
-        //   });
-        //   getData();
-        // },
-        onPressed: _showNotificationWithSound,
+        onPressed: () {
+          setState(() {
+            rawData = [];
+            rowData = [];
+          });
+          getData();
+        },
         child: Icon(Icons.refresh),
         backgroundColor: Colors.green,
       ),
@@ -282,9 +301,8 @@ class _codesViewerState extends State<codesViewer> {
   Future _showNotificationWithSound() async {
     var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
         'your channel id', 'your channel name', 'your channel description',
-        importance: Importance.max, priority: Priority.high,showWhen: false);
-    var iOSPlatformChannelSpecifics =
-        new IOSNotificationDetails();
+        importance: Importance.max, priority: Priority.high, showWhen: false);
+    var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
     var platformChannelSpecifics = new NotificationDetails(
         android: androidPlatformChannelSpecifics,
         iOS: iOSPlatformChannelSpecifics);
