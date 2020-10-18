@@ -1,6 +1,6 @@
-# iosapp
+# Current_Trading_Halts
 
-iop app for fiver
+Current_Trading_Halts app for fiver
 
 ## Getting Started
 

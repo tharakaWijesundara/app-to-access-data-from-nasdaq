@@ -4,6 +4,7 @@ import 'package:http/http.dart';
 import 'package:xml2json/xml2json.dart';
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 void main() => runApp(IosApp());
 
@@ -13,7 +14,7 @@ class IosApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Ios App',
+      title: 'Current Trading Halts',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -34,19 +35,46 @@ class _codesViewerState extends State<codesViewer> {
     return MediaQuery.of(context).size;
   }
 
+  //Notification Part
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  Future onSelectNotification(String payload) async {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return new AlertDialog(
+          title: Text("Issue Symbol"),
+          content: Text("Issue Symbol is identical for consecutive 3 times"),
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     myFuture = getData();
+    var initializationSettingsAndroid =
+        new AndroidInitializationSettings('@mipmap/ic_launcher');
+    var initializationSettingsIOS = new IOSInitializationSettings();
+    var initializationSettings = new InitializationSettings(
+        android: initializationSettingsAndroid, iOS: initializationSettingsIOS);
+    flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+    flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: onSelectNotification);
   }
 
   /////////////for testing///////////
   List<Map<String, dynamic>> results = [
-    {"haltTime": "04:27:40", "issueSymbol": "ATHE", "reasonCodes": "AB"},
-    {"haltTime": "04:27:45", "issueSymbol": "ATH", "reasonCodes": "ABC"},
-    {"haltTime": "04:27:46", "issueSymbol": "AT", "reasonCodes": "AC"}
+    {"haltTime": "04:27:40", "issueSymbol": "ATHE", "reasonCodes": 'LUDP'},
+    {"haltTime": "04:27:45", "issueSymbol": "ATH", "reasonCodes": 'LUDP'},
+    {"haltTime": "04:27:46", "issueSymbol": "AT", "reasonCodes": 'M'}
   ];
   //////////////////////////////////
+  Map<String, dynamic> ignore = {
+    "haltTime": "",
+    "issueSymbol": "",
+    "reasonCodes": ''
+  };
 
   List<Map<String, dynamic>> rawData = [];
   List<Map<String, dynamic>> rowData = [];
@@ -75,10 +103,13 @@ class _codesViewerState extends State<codesViewer> {
           obj['haltTime'] = data['ndaq\$HaltTime']['\$t'];
           obj['issueSymbol'] = data['ndaq\$IssueSymbol']['\$t'];
           obj['reasonCodes'] = data['ndaq\$ReasonCode']['\$t'];
-
-          rowData.add(obj);
+          if (obj['reasonCodes'] == 'LUDP' || obj['reasonCodes'] == 'T12') {
+            rowData.add(obj);
+          }
         }
       });
+      //issue symbol is same for consecutive three times
+
 //      print(data);
       print("done");
       print(rowData[0]);
@@ -143,7 +174,7 @@ class _codesViewerState extends State<codesViewer> {
         child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Center(child: const Text('Custom app')),
+        title: Center(child: const Text('Current Trading Halts')),
       ),
       body: FutureBuilder(
         future: myFuture,
@@ -158,7 +189,7 @@ class _codesViewerState extends State<codesViewer> {
               child: SingleChildScrollView(
                   child: Center(
                       child: Container(
-                          padding: new EdgeInsets.all(5.0),
+                          padding: new EdgeInsets.all(10.0),
                           width: width,
                           child: Center(
                             child: DataTable(
@@ -234,16 +265,37 @@ class _codesViewerState extends State<codesViewer> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            rawData = [];
-            rowData = [];
-          });
-          getData();
-        },
+        // onPressed: () {
+        //   setState(() {
+        //     rawData = [];
+        //     rowData = [];
+        //   });
+        //   getData();
+        // },
+        onPressed: _showNotificationWithSound,
         child: Icon(Icons.refresh),
         backgroundColor: Colors.green,
       ),
     ));
   }
+
+  Future _showNotificationWithSound() async {
+    var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
+        'your channel id', 'your channel name', 'your channel description',
+        importance: Importance.max, priority: Priority.high,showWhen: false);
+    var iOSPlatformChannelSpecifics =
+        new IOSNotificationDetails();
+    var platformChannelSpecifics = new NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Issue Symbol',
+      'Issue Symbol is identical for consecutive 3 times',
+      platformChannelSpecifics,
+      payload: 'HexCode Labs',
+    );
+  }
 }
+
+class High {}
