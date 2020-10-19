@@ -4,7 +4,11 @@ import 'package:http/http.dart';
 import 'package:xml2json/xml2json.dart';
 import 'dart:convert';
 import 'dart:async';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import "package:Current_Trading_Halts/aboutUs.dart";
+
 
 void main() => runApp(IosApp());
 
@@ -31,6 +35,9 @@ class codesViewer extends StatefulWidget {
 class _codesViewerState extends State<codesViewer> {
   final Xml2Json xml2json = Xml2Json();
   Future<String> myFuture;
+
+
+
   Size screenSize(BuildContext context) {
     return MediaQuery.of(context).size;
   }
@@ -61,8 +68,15 @@ class _codesViewerState extends State<codesViewer> {
     flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onSelectNotification: onSelectNotification);
-  }
 
+    Timer.periodic(Duration(seconds: 60), (timer) {
+      setState(() {
+        rawData = [];
+        rowData = [];
+        getData();
+      });
+    });
+  }
   /////////////for testing///////////
   List<Map<String, dynamic>> results = [
     {"haltTime": "04:27:40", "issueSymbol": "ATHE", "reasonCodes": 'LUDP'},
@@ -185,12 +199,32 @@ class _codesViewerState extends State<codesViewer> {
 
   @override
   Widget build(BuildContext context) {
+
+
     final double width = screenSize(context).width;
     return Container(
         child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Center(child: const Text('Current Trading Halts')),
+        centerTitle: true,
+        actions: <Widget>[
+          Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => aboutUs()),
+                  );
+                },
+                child: Icon(
+                  Icons.perm_identity,
+                  size: 26.0,
+                ),
+              )
+          ),
+        ],
       ),
       body: FutureBuilder(
         future: myFuture,
